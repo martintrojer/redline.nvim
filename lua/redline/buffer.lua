@@ -34,12 +34,13 @@ function M.get_or_create(config)
     return existing
   end
 
-  local bufnr = util.create_scratch_buffer({
-    name = config.buf_name,
-    filetype = "markdown",
-    modifiable = true,
-    bufhidden = "hide",
-  })
+  local bufnr = vim.api.nvim_create_buf(true, false)
+  pcall(vim.api.nvim_buf_set_name, bufnr, config.buf_name)
+  vim.bo[bufnr].buftype = "nofile"
+  vim.bo[bufnr].bufhidden = "hide"
+  vim.bo[bufnr].swapfile = false
+  vim.bo[bufnr].filetype = "markdown"
+  vim.bo[bufnr].modifiable = true
 
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, format.preamble(config))
   vim.bo[bufnr].modified = false
