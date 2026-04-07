@@ -1,6 +1,6 @@
 local M = {}
 
-M.config = {
+M.defaults = {
   repo_type = nil,
   repo_root = nil,
   open_mode = "split",
@@ -11,28 +11,38 @@ M.config = {
   providers = {},
 }
 
+function M.make_config(opts)
+  return vim.tbl_extend("force", M.defaults, opts or {})
+end
+
 function M.setup(opts)
-  M.config = vim.tbl_extend("force", M.config, opts or {})
+  M.defaults = vim.tbl_extend("force", M.defaults, opts or {})
 
-  if M.config.providers.minigit then
-    require("redline.providers.minigit").setup(M.config)
+  if M.defaults.providers.minigit then
+    require("redline.providers.minigit").setup(M.defaults)
   end
-  if M.config.providers.difftool then
-    require("redline.providers.difftool").setup(M.config)
+  if M.defaults.providers.difftool then
+    require("redline.providers.difftool").setup(M.defaults)
   end
 end
 
-function M.show()
-  return require("redline.buffer").show(M.config)
+function M.show(config)
+  return require("redline.buffer").show(config)
 end
 
-function M.append(entry)
-  local number, bufnr = require("redline.buffer").append(M.config, entry)
+function M.append(config, entry)
+  if entry.vcs then
+    config.repo_type = entry.vcs
+  end
+  if entry.repo_root then
+    config.repo_root = entry.repo_root
+  end
+  local number, bufnr = require("redline.buffer").append(config, entry)
   require("redline.util").info("Review added (" .. number .. ")")
   return number, bufnr
 end
 
-function M.comment(bufnr, entry_fn)
+function M.comment(config, bufnr, entry_fn)
   local entry, err = entry_fn(bufnr)
   if not entry then
     require("redline.util").warn(err)
@@ -44,7 +54,7 @@ function M.comment(bufnr, entry_fn)
       return
     end
     entry.comment = comment
-    M.append(entry)
+    M.append(config, entry)
   end)
 end
 
@@ -108,8 +118,8 @@ function M.extract_inline_diff_entry(bufnr, ranges)
   }
 end
 
-function M.comment_unified_diff(bufnr, ctx)
-  M.comment(bufnr, function(b)
+function M.comment_unified_diff(config, bufnr, ctx)
+  M.comment(config, bufnr, function(b)
     return M.extract_unified_diff_entry(b, ctx)
   end)
 end

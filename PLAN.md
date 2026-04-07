@@ -233,71 +233,95 @@ Direct ports from `~/diff-review.nvim/lua/diff-review/providers/`:
 
 Changes to `~/jj-fugitive/`:
 
-### Add redline dependency
+### Add redline as optional dependency
 Document in README. In lazy.nvim: `dependencies = { "martintrojer/redline.nvim" }`
+(optional — jj-fugitive works without it, review keymaps just won't appear)
 
 ### `init.lua` setup
-Call `require("redline").setup()` inside `M.setup()`:
+Call `require("redline").setup()` inside `M.setup()`, guarded by pcall:
 ```lua
-require("redline").setup({
-  repo_type = "jj",
-  repo_root = function() return M.repo_root() or vim.fn.getcwd() end,
-  open_mode = M.config.open_mode,
-  buf_name = "jj-review",
-  on_show = function(bufnr) -- gl, gs, gb, g? keymaps end,
-})
+local has_redline, redline = pcall(require, "redline")
+if has_redline then
+  redline.setup({
+    repo_type = "jj",
+    repo_root = function() return M.repo_root() or vim.fn.getcwd() end,
+    open_mode = M.config.open_mode,
+    buf_name = "jj-review",
+    on_show = function(bufnr) -- gl, gs, gb, g? keymaps end,
+  })
+end
 ```
 
 ### diff.lua
-Replace `set_review_context` + `require("jj-fugitive.review")` calls:
+Replace `set_review_context` + `require("jj-fugitive.review")` calls with
+pcall-guarded redline calls:
 ```lua
-local review_ctx = { file = filename, rev = rev or "@" }
-ui.map(bufnr, "n", "cR", function()
-  require("redline").comment_unified_diff(bufnr, review_ctx)
-end)
-ui.map(bufnr, "n", "gR", function() require("redline").show() end)
+local has_redline, redline = pcall(require, "redline")
+if has_redline then
+  local review_ctx = { file = filename, rev = rev or "@" }
+  ui.map(bufnr, "n", "cR", function()
+    redline.comment_unified_diff(bufnr, review_ctx)
+  end)
+  ui.map(bufnr, "n", "gR", function() redline.show() end)
+end
 ```
 
 Remove `set_review_context()` helper and the `pcall(nvim_buf_set_var ...)` call.
 
 ### log.lua
-Same pattern for show detail buffers:
+Same pcall-guarded pattern for show detail buffers:
 ```lua
-local review_ctx = { rev = id }
-ui.map(show_buf, "n", "cR", function()
-  require("redline").comment_unified_diff(show_buf, review_ctx)
-end)
-ui.map(show_buf, "n", "gR", function() require("redline").show() end)
+local has_redline, redline = pcall(require, "redline")
+if has_redline then
+  local review_ctx = { rev = id }
+  ui.map(show_buf, "n", "cR", function()
+    redline.comment_unified_diff(show_buf, review_ctx)
+  end)
+  ui.map(show_buf, "n", "gR", function() redline.show() end)
+end
 ```
 
 Remove `pcall(vim.api.nvim_buf_set_var, show_buf, "jj_review_context", ...)`.
-Keep `gR` on the log buffer itself (line 656).
+Keep `gR` on the log buffer itself (line 656), also guarded.
 
 ### status.lua
-Replace `comment_inline_diff`:
+Replace `comment_inline_diff`, guarded:
 ```lua
-local function comment_inline_diff(bufnr)
-  local ranges = inline_diff_state(bufnr)
-  require("redline").comment(bufnr, function(b)
-    return require("redline").extract_inline_diff_entry(b, ranges)
-  end)
+local has_redline, redline = pcall(require, "redline")
+if has_redline then
+  local function comment_inline_diff(bufnr)
+    local ranges = inline_diff_state(bufnr)
+    redline.comment(bufnr, function(b)
+      return redline.extract_inline_diff_entry(b, ranges)
+    end)
+  end
+  ui.map(bufnr, "n", "cR", function() comment_inline_diff(bufnr) end)
+  ui.map(bufnr, "n", "gR", function() redline.show() end)
 end
 ```
 
 ### bookmark.lua
-Replace `require("jj-fugitive.review").show()` → `require("redline").show()`
+Replace `require("jj-fugitive.review").show()`, guarded:
+```lua
+local has_redline, redline = pcall(require, "redline")
+if has_redline then
+  ui.map(bufnr, "n", "gR", function() redline.show() end)
+end
+```
 
 ### Delete review.lua
 Remove `lua/jj-fugitive/review.lua` entirely.
 
 ## Step 5: Migrate sl-fugitive ⬜
 
-Same pattern as jj-fugitive, with:
+Same pcall-guarded pattern as jj-fugitive, with:
 - `repo_type = "Sapling"`
 - `buf_name = "sl-review"`
 - Richer context in diff.lua and log.lua (include `source`, `node`, `summary`,
   `author`, `date`)
-- Also update annotate.lua (`gR` only)
+- Also update annotate.lua (`gR` only, guarded)
+- All `require("redline")` calls wrapped in `pcall` — sl-fugitive works
+  without redline installed, review keymaps just won't appear
 
 ### browse.lua decoupling
 `browse.lua` reads `jj_review_context` for `node` and `file` (lines 140, 167).

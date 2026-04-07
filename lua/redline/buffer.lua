@@ -7,9 +7,30 @@ function M.find(config)
   return util.find_buf(config.buf_name:gsub("%-", "%%-"))
 end
 
+local function preamble_end(bufnr)
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  for i, line in ipairs(lines) do
+    if line == "## Review Items" then
+      return i + 1 -- line after "## Review Items" (+ blank line)
+    end
+  end
+  return nil
+end
+
+local function update_preamble(bufnr, config)
+  local end_line = preamble_end(bufnr)
+  if not end_line then
+    return
+  end
+  local new_preamble = format.preamble(config)
+  vim.api.nvim_buf_set_lines(bufnr, 0, end_line, false, new_preamble)
+  vim.bo[bufnr].modified = false
+end
+
 function M.get_or_create(config)
   local existing = M.find(config)
   if existing then
+    update_preamble(existing, config)
     return existing
   end
 

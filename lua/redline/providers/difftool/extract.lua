@@ -174,6 +174,7 @@ function M.current()
   local entry = {
     vcs = meta.vcs,
     repo_root = meta.repo_root,
+    source = "DiffTool",
     path = meta.current.relpath or meta.current.path,
     rev = meta.current.display or meta.current.rev,
     side = current.side,

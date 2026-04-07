@@ -45,23 +45,33 @@ local function parse_revision(git_command)
   return args[1]
 end
 
-function M.setup(config)
+function M.setup(_defaults)
   if initialized then
     return
   end
   initialized = true
 
+  M.config = require("redline").make_config({
+    repo_type = "git",
+    buf_name = "redline-git",
+    source = "mini.git review",
+    repo_root = function()
+      return M.last_cwd or vim.fn.getcwd()
+    end,
+  })
+
   vim.api.nvim_create_autocmd("User", {
     pattern = "MiniGitCommandSplit",
     callback = function(au_data)
-      M.on_split(au_data, config)
+      M.on_split(au_data)
     end,
   })
 end
 
-function M.on_split(au_data, _config)
+function M.on_split(au_data)
   local data = au_data.data or {}
   local subcmd = data.git_subcommand
+  M.last_cwd = data.cwd
   local bufnr = data.win_stdout and vim.fn.winbufnr(data.win_stdout) or nil
   if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
     return
@@ -79,14 +89,14 @@ function M.on_split(au_data, _config)
     }
 
     util.map(bufnr, "n", "cR", function()
-      redline.comment_unified_diff(bufnr, ctx)
+      redline.comment_unified_diff(M.config, bufnr, ctx)
     end)
     util.map(bufnr, "n", "gR", function()
-      redline.show()
+      redline.show(M.config)
     end)
   elseif subcmd == "log" or subcmd == "blame" then
     util.map(bufnr, "n", "gR", function()
-      redline.show()
+      redline.show(M.config)
     end)
   end
 end

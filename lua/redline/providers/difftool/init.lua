@@ -60,13 +60,16 @@ local function schedule_attach(bufnr)
   end, 50)
 end
 
-function M.setup(config)
+function M.setup(_defaults)
   if initialized then
     return
   end
   initialized = true
 
-  M.config = config
+  M.config = require("redline").make_config({
+    buf_name = "redline-difftool",
+    source = "DiffTool",
+  })
 
   local group = vim.api.nvim_create_augroup("RedlineDifftool", { clear = true })
   vim.api.nvim_create_autocmd({ "BufWinEnter", "WinEnter" }, {
@@ -78,7 +81,7 @@ function M.setup(config)
 end
 
 function M.open_review()
-  require("redline").show()
+  require("redline").show(M.config)
 end
 
 function M.comment_current()
@@ -93,7 +96,7 @@ function M.comment_current()
       return
     end
     entry.comment = comment
-    local number = require("redline").append(entry)
+    local number = require("redline").append(M.config, entry)
     notify_capture(entry.side, number)
   end)
 end
