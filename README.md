@@ -102,15 +102,17 @@ on relevant buffers:
 | `cR` | Add a review comment for the current line |
 | `gR` | Open the review buffer |
 
-**minigit provider:** attaches to `MiniGitCommandSplit` events. Works with
-`:Git diff`, `:Git show`, `:Git log`, and `:Git blame`.
+**minigit provider:** attaches to `MiniGitCommandSplit` events and
+`MiniGit.show_at_cursor()` buffers. Works with `:Git diff`, `:Git show`,
+`:Git log`, `:Git blame`, and cursor-based commit inspection.
 
 **difftool provider:** attaches to `:DiffTool` side-by-side diff windows.
 Detects git, jj, and hg repos automatically and resolves revision metadata.
 
 ### `:Redline` command
 
-Opens the default review buffer. Useful for checking collected review items.
+Jumps to an existing review buffer. If multiple review buffers exist (e.g.
+from different providers), presents a picker. If none exist, shows a message.
 
 ### As a library
 
@@ -141,7 +143,8 @@ redline.show(config)
 |----------|-------------|
 | `setup(opts)` | Set defaults and enable providers |
 | `make_config(opts)` | Create a per-provider config table |
-| `show(config)` | Show the review buffer |
+| `show(config)` | Show the review buffer for a specific config |
+| `show_any()` | Find and show existing review buffers (picker if multiple) |
 | `append(config, entry)` | Append a formatted review item |
 | `comment(config, bufnr, entry_fn)` | Extract entry + prompt for comment + append |
 | `comment_unified_diff(config, bufnr, ctx)` | Convenience wrapper for unified diff capture |

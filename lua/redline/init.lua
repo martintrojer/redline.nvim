@@ -11,8 +11,12 @@ M.defaults = {
   providers = {},
 }
 
+M._configs = {}
+
 function M.make_config(opts)
-  return vim.tbl_extend("force", M.defaults, opts or {})
+  local config = vim.tbl_extend("force", M.defaults, opts or {})
+  table.insert(M._configs, config)
+  return config
 end
 
 function M.setup(opts)
@@ -28,6 +32,38 @@ end
 
 function M.show(config)
   return require("redline.buffer").show(config)
+end
+
+function M.find_review_buffers()
+  local buffer = require("redline.buffer")
+  local results = {}
+  for _, config in ipairs(M._configs) do
+    local bufnr = buffer.find(config)
+    if bufnr then
+      table.insert(results, { config = config, bufnr = bufnr })
+    end
+  end
+  return results
+end
+
+function M.show_any()
+  local found = M.find_review_buffers()
+  if #found == 0 then
+    require("redline.util").warn("No review buffers open")
+    return
+  end
+  if #found == 1 then
+    return M.show(found[1].config)
+  end
+  local labels = {}
+  for _, item in ipairs(found) do
+    table.insert(labels, item.config.buf_name)
+  end
+  vim.ui.select(labels, { prompt = "Review buffer:" }, function(_, idx)
+    if idx then
+      M.show(found[idx].config)
+    end
+  end)
 end
 
 function M.append(config, entry)

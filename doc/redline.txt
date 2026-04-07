@@ -18,7 +18,9 @@ Each provider gets its own review buffer with correct context.
 COMMANDS                                        *redline-commands*
 
                                                 *:Redline*
-:Redline                Open the default review buffer.
+:Redline                Jump to an existing review buffer. If multiple
+                        exist (e.g. from different providers), presents
+                        a picker. If none exist, shows a message.
 
 SETUP                                           *redline-setup*
 
@@ -66,7 +68,8 @@ PROVIDERS                                       *redline-providers*
 
 minigit ~
                                                 *redline-minigit*
-Attaches to `MiniGitCommandSplit` autocmd events from mini.git.
+Attaches to `MiniGitCommandSplit` autocmd events and
+`MiniGit.show_at_cursor()` buffers from mini.git.
 Maps `cR`/`gR` on diff and show buffers, `gR` on log and blame.
 Creates its own review buffer named `redline-git`.
 
@@ -95,6 +98,12 @@ redline.show({config})                          *redline.show()*
   Show the review buffer for {config}. Creates the buffer on first
   call, reuses it on subsequent calls. Refreshes the preamble on
   each call to keep context current.
+
+redline.show_any()                              *redline.show_any()*
+  Find existing review buffers across all registered configs.
+  If one exists, jump to it. If multiple exist, present a picker
+  via `vim.ui.select`. If none exist, show a warning.
+  Used by the |:Redline| command.
 
 redline.append({config}, {entry})               *redline.append()*
   Append a formatted review item to the buffer for {config}.
