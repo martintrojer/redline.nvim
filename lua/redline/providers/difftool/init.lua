@@ -7,14 +7,6 @@ local function difftool_active()
   return ok and #autocmds > 0
 end
 
-local function notify_capture(side, number)
-  if side == "left" then
-    vim.notify("Review added (" .. number .. ", left/original side)", vim.log.levels.INFO)
-    return
-  end
-  vim.notify("Review added (" .. number .. ")", vim.log.levels.INFO)
-end
-
 local function set_buffer_keymaps(bufnr)
   if vim.b[bufnr].redline_difftool_keymaps_set then
     return
@@ -96,8 +88,7 @@ function M.comment_current()
       return
     end
     entry.comment = comment
-    local number = require("redline").append(M.config, entry)
-    notify_capture(entry.side, number)
+    require("redline").append(M.config, entry)
   end)
 end
 

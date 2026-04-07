@@ -38,7 +38,11 @@ function M.append(config, entry)
     config.repo_root = entry.repo_root
   end
   local number, bufnr = require("redline.buffer").append(config, entry)
-  require("redline.util").info("Review added (" .. number .. ")")
+  local msg = "Review added (" .. number
+  if entry.side == "left" then
+    msg = msg .. ", left/original side"
+  end
+  require("redline.util").info(msg .. ")")
   return number, bufnr
 end
 
