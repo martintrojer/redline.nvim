@@ -60,10 +60,25 @@ function M.setup(_defaults)
     end,
   })
 
+  local group = vim.api.nvim_create_augroup("RedlineMinigit", { clear = true })
+
   vim.api.nvim_create_autocmd("User", {
+    group = group,
     pattern = "MiniGitCommandSplit",
     callback = function(au_data)
       M.on_split(au_data)
+    end,
+  })
+
+  -- MiniGit.show_at_cursor() does not fire MiniGitCommandSplit, so also
+  -- catch its buffers via FileType. These have names like "show --stat ...".
+  vim.api.nvim_create_autocmd("FileType", {
+    group = group,
+    pattern = "git",
+    callback = function(args)
+      vim.schedule(function()
+        M.on_git_filetype(args.buf)
+      end)
     end,
   })
 end
@@ -76,6 +91,8 @@ function M.on_split(au_data)
   if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
     return
   end
+
+  pcall(vim.api.nvim_buf_set_var, bufnr, "redline_minigit_keymaps_set", true)
 
   local redline = require("redline")
   local util = require("redline.util")
@@ -99,6 +116,43 @@ function M.on_split(au_data)
       redline.show(M.config)
     end)
   end
+end
+
+function M.on_git_filetype(bufnr)
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return
+  end
+  -- Skip if keymaps already set (e.g. by on_split)
+  if require("redline.util").buf_var(bufnr, "redline_minigit_keymaps_set", false) then
+    return
+  end
+  -- Only attach to scratch buffers (show_at_cursor creates nofile buffers)
+  if vim.bo[bufnr].buftype ~= "nofile" then
+    return
+  end
+  -- Parse the commit hash from the buffer name (e.g. "show --stat --patch abc123")
+  local name = vim.api.nvim_buf_get_name(bufnr)
+  local hash = name:match("show%s.*%s(%x%x%x%x%x%x%x+)$")
+  if not hash then
+    return
+  end
+
+  pcall(vim.api.nvim_buf_set_var, bufnr, "redline_minigit_keymaps_set", true)
+
+  local redline = require("redline")
+  local util = require("redline.util")
+  local ctx = {
+    file = nil,
+    rev = hash,
+    source = "mini.git show",
+  }
+
+  util.map(bufnr, "n", "cR", function()
+    redline.comment_unified_diff(M.config, bufnr, ctx)
+  end)
+  util.map(bufnr, "n", "gR", function()
+    redline.show(M.config)
+  end)
 end
 
 return M

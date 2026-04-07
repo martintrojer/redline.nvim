@@ -1,0 +1,153 @@
+# redline.nvim
+
+A Neovim plugin for capturing code review comments from diff views.
+
+The workflow: navigate diffs, press `cR` to capture lines of interest with a
+comment, then open the review buffer with `gR`. The buffer is a structured
+markdown document — edit it if needed, then copy and paste the whole thing
+into your AI agent of choice for review feedback.
+
+Works as a shared engine across multiple VCS plugins — one plugin, multiple
+providers.
+
+## Features
+
+- **Review buffer** — shared scratch buffer with AI-ready preamble and numbered review items
+- **Unified diff capture** — extract file, revision, hunk, and selected line from `diff --git` output
+- **Inline diff capture** — extract review entries from status inline diffs
+- **Per-provider configs** — each provider gets its own buffer and context, no conflicts
+- **Built-in providers:**
+  - **minigit** — integrates with [mini.git](https://github.com/echasnovski/mini.nvim) command splits (`:Git diff`, `:Git show`)
+  - **difftool** — integrates with Neovim 0.12+ `:DiffTool` side-by-side diffs, with VCS-backed metadata for git, jj, and hg
+- **Plugin integration** — used as an optional dependency by [jj-fugitive](https://github.com/martintrojer/jj-fugitive) and [sl-fugitive](https://github.com/martintrojer/sl-fugitive)
+
+## Requirements
+
+- Neovim 0.12+
+
+## Installation
+
+### [lazy.nvim](https://github.com/folke/lazy.nvim)
+
+```lua
+{
+  "martintrojer/redline.nvim",
+  config = function()
+    require("redline").setup({
+      providers = { difftool = true, minigit = true },
+    })
+  end,
+}
+```
+
+### vim.pack (Neovim 0.12+)
+
+```lua
+vim.pack.add("https://github.com/martintrojer/redline.nvim")
+```
+
+Then in your init:
+
+```lua
+require("redline").setup({
+  providers = { difftool = true, minigit = true },
+})
+```
+
+### As a dependency only
+
+When used purely as a dependency of jj-fugitive or sl-fugitive, you don't
+need to call `setup()` — just add redline to your plugins. The parent plugin
+creates its own config via `redline.make_config()`.
+
+### Combined
+
+If you want jj-fugitive review support AND the built-in providers (e.g.
+`:DiffTool`, mini.git), call `setup()` for the providers. jj-fugitive
+creates its own config separately. Each gets its own review buffer — they
+don't conflict.
+
+```lua
+-- redline setup enables built-in providers
+require("redline").setup({
+  providers = { difftool = true, minigit = true },
+})
+
+-- jj-fugitive creates its own "jj-review" buffer automatically
+require("jj-fugitive").setup({ ... })
+```
+
+## Configuration
+
+```lua
+require("redline").setup({
+  open_mode = "split",       -- "split" or "tab"
+  prompt_lines = nil,        -- nil = default AI prompt, false = none, table = custom
+  providers = {
+    minigit = true,          -- auto-attach to mini.git command splits
+    difftool = true,         -- auto-attach to :DiffTool windows
+  },
+})
+```
+
+## Usage
+
+### Built-in providers
+
+When providers are enabled, `cR` and `gR` keymaps are automatically mapped
+on relevant buffers:
+
+| Keymap | Action |
+|--------|--------|
+| `cR` | Add a review comment for the current line |
+| `gR` | Open the review buffer |
+
+**minigit provider:** attaches to `MiniGitCommandSplit` events. Works with
+`:Git diff`, `:Git show`, `:Git log`, and `:Git blame`.
+
+**difftool provider:** attaches to `:DiffTool` side-by-side diff windows.
+Detects git, jj, and hg repos automatically and resolves revision metadata.
+
+### `:Redline` command
+
+Opens the default review buffer. Useful for checking collected review items.
+
+### As a library
+
+Plugins can use redline as a review engine by creating their own config:
+
+```lua
+local redline = require("redline")
+local config = redline.make_config({
+  repo_type = "jj",
+  repo_root = function() return find_root() end,
+  buf_name = "my-review",
+  source = "my-plugin review",
+  on_show = function(bufnr)
+    -- set up custom keymaps on the review buffer
+  end,
+})
+
+-- From a diff buffer keymap:
+redline.comment_unified_diff(config, bufnr, { file = "foo.lua", rev = "@" })
+
+-- Open the review buffer:
+redline.show(config)
+```
+
+## API
+
+| Function | Description |
+|----------|-------------|
+| `setup(opts)` | Set defaults and enable providers |
+| `make_config(opts)` | Create a per-provider config table |
+| `show(config)` | Show the review buffer |
+| `append(config, entry)` | Append a formatted review item |
+| `comment(config, bufnr, entry_fn)` | Extract entry + prompt for comment + append |
+| `comment_unified_diff(config, bufnr, ctx)` | Convenience wrapper for unified diff capture |
+| `extract_unified_diff_entry(bufnr, ctx)` | Parse entry from a unified diff buffer |
+| `extract_inline_diff_entry(bufnr, ranges)` | Parse entry from status inline diffs |
+
+## License
+
+MIT

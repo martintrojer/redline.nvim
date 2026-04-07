@@ -1,0 +1,157 @@
+*redline.txt*  AI review comment capture for Neovim diffs
+
+Author:  Martin Trojer
+License: MIT
+
+INTRODUCTION                                    *redline* *redline.nvim*
+
+A Neovim plugin for capturing code review comments from diff views.
+
+The workflow: navigate diffs, press `cR` to capture lines of interest
+with a comment, then open the review buffer with `gR`. The buffer is
+a structured markdown document — edit it if needed, then copy and
+paste the whole thing into your AI agent of choice for review feedback.
+
+Works as a shared engine across multiple VCS plugins and diff modes.
+Each provider gets its own review buffer with correct context.
+
+COMMANDS                                        *redline-commands*
+
+                                                *:Redline*
+:Redline                Open the default review buffer.
+
+SETUP                                           *redline-setup*
+
+Enable built-in providers with `setup()`:
+>lua
+  require("redline").setup({
+    open_mode = "split",
+    prompt_lines = nil,
+    providers = {
+      minigit = true,
+      difftool = true,
+    },
+  })
+<
+When used as a dependency of another plugin (e.g. jj-fugitive),
+no `setup()` call is needed — the parent plugin creates its own
+config via `make_config()`.
+
+CONFIG                                          *redline-config*
+
+Fields passed to `setup()` or `make_config()`:
+
+  repo_type       `string|nil`    VCS type: "git", "jj", "Sapling", etc.
+  repo_root       `string|function|nil`
+                                  Repository root path or function returning it.
+  open_mode       `string`        "split" (default) or "tab".
+  buf_name        `string`        Buffer name (default "redline-review").
+  prompt_lines    `table|false|nil`
+                                  nil = default AI prompt, false = none,
+                                  table = custom lines.
+  source          `string|nil`    Label for the preamble "Source:" line.
+  on_show         `function|nil`  Called with (bufnr) when the review buffer
+                                  is shown. Use to set custom keymaps.
+  providers       `table`         { minigit = bool, difftool = bool }
+
+KEYMAPS                                         *redline-keymaps*
+
+When providers are enabled, the following keymaps are automatically
+set on relevant diff buffers:
+
+  cR              Add a review comment for the current line.
+  gR              Open the review buffer.
+
+PROVIDERS                                       *redline-providers*
+
+minigit ~
+                                                *redline-minigit*
+Attaches to `MiniGitCommandSplit` autocmd events from mini.git.
+Maps `cR`/`gR` on diff and show buffers, `gR` on log and blame.
+Creates its own review buffer named `redline-git`.
+
+difftool ~
+                                                *redline-difftool*
+Attaches to Neovim 0.12+ `:DiffTool` side-by-side diff windows via
+`BufWinEnter`/`WinEnter` autocmds. Detects git, jj, and hg repos
+by walking upward for `.git`/`.jj`/`.hg` markers. Resolves revision
+metadata (commit hashes, change IDs, blob IDs) from VCS commands.
+Creates its own review buffer named `redline-difftool`.
+
+Captures both sides of the diff with context lines, hunk data, and
+quickfix metadata when available.
+
+API                                             *redline-api*
+
+redline.setup({opts})                           *redline.setup()*
+  Set default config values and enable providers.
+
+redline.make_config({opts})                     *redline.make_config()*
+  Create a new config table by extending defaults with {opts}.
+  Used by providers and external plugins to get their own config
+  with a separate buffer name and context.
+
+redline.show({config})                          *redline.show()*
+  Show the review buffer for {config}. Creates the buffer on first
+  call, reuses it on subsequent calls. Refreshes the preamble on
+  each call to keep context current.
+
+redline.append({config}, {entry})               *redline.append()*
+  Append a formatted review item to the buffer for {config}.
+  Updates config repo_type/repo_root from entry fields if present.
+  Returns (number, bufnr).
+
+redline.comment({config}, {bufnr}, {entry_fn})  *redline.comment()*
+  Extract an entry via {entry_fn}(bufnr), prompt the user for a
+  comment via `vim.ui.input`, then append to the review buffer.
+
+                                                *redline.comment_unified_diff()*
+redline.comment_unified_diff({config}, {bufnr}, {ctx})
+  Convenience wrapper: parses a unified diff entry from {bufnr}
+  using {ctx} (file, rev, etc.) then prompts and appends.
+
+                                                *redline.extract_unified_diff_entry()*
+redline.extract_unified_diff_entry({bufnr}, {ctx})
+  Parse a review entry from a unified diff buffer at cursor.
+  {ctx} fields: file, rev, node, source, summary, author, date.
+  Returns (entry, nil) or (nil, error_string).
+
+                                                *redline.extract_inline_diff_entry()*
+redline.extract_inline_diff_entry({bufnr}, {ranges})
+  Parse a review entry from status inline diffs. {ranges} is a
+  list of {start_line, end_line, file, rev, ...} tables.
+  Returns (entry, nil) or (nil, error_string).
+
+LIBRARY USAGE                                   *redline-library*
+
+External plugins create their own config and pass it to all calls:
+>lua
+  local redline = require("redline")
+  local config = redline.make_config({
+    repo_type = "jj",
+    repo_root = function() return find_root() end,
+    buf_name = "jj-review",
+    source = "jj-fugitive review",
+    on_show = function(bufnr) end,
+  })
+
+  -- Map cR on a diff buffer:
+  vim.keymap.set("n", "cR", function()
+    redline.comment_unified_diff(config, bufnr, ctx)
+  end, { buffer = bufnr })
+
+  -- Map gR:
+  vim.keymap.set("n", "gR", function()
+    redline.show(config)
+  end, { buffer = bufnr })
+<
+REQUIREMENTS                                    *redline-requirements*
+
+- Neovim 0.12+
+
+Optional: ~
+
+- mini.git (for minigit provider)
+  https://github.com/echasnovski/mini.nvim
+
+ vim:tw=78:ts=8:ft=help:norl:
