@@ -15,6 +15,13 @@ M._configs = {}
 
 function M.make_config(opts)
   local config = vim.tbl_extend("force", M.defaults, opts or {})
+  -- Deduplicate by buf_name
+  for i, existing in ipairs(M._configs) do
+    if existing.buf_name == config.buf_name then
+      M._configs[i] = config
+      return config
+    end
+  end
   table.insert(M._configs, config)
   return config
 end

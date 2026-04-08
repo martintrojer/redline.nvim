@@ -1,6 +1,5 @@
 local base = require("redline.providers.difftool.vcs.base")
-local detect = require("redline.providers.difftool.detect")
-local util = require("redline.providers.difftool.vcs.util")
+local util = require("redline.util")
 
 local M = {
   name = "jj",
@@ -51,56 +50,9 @@ local function rev_spec(repo_root, revset)
 end
 
 function M.resolve_session(ctx)
-  local current_in_repo = detect.is_inside_root(ctx.current_path, ctx.detection.repo_root)
-  local peer_in_repo = detect.is_inside_root(ctx.peer_path, ctx.detection.repo_root)
   local at = rev_spec(ctx.detection.repo_root, "@")
   local parent = rev_spec(ctx.detection.repo_root, "@-")
-
-  if current_in_repo and not peer_in_repo then
-    return base.make_meta(ctx, {
-      confidence = "medium",
-      current_rev = at.rev,
-      current_rev_kind = at.kind,
-      current_display = at.display,
-      peer_rev = parent.rev,
-      peer_rev_kind = parent.kind,
-      peer_display = parent.display,
-    })
-  end
-
-  if peer_in_repo and not current_in_repo then
-    return base.make_meta(ctx, {
-      confidence = "medium",
-      current_rev = parent.rev,
-      current_rev_kind = parent.kind,
-      current_display = parent.display,
-      peer_rev = at.rev,
-      peer_rev_kind = at.kind,
-      peer_display = at.display,
-    })
-  end
-
-  if ctx.side == "right" then
-    return base.make_meta(ctx, {
-      confidence = "low",
-      current_rev = at.rev,
-      current_rev_kind = at.kind,
-      current_display = at.display,
-      peer_rev = parent.rev,
-      peer_rev_kind = parent.kind,
-      peer_display = parent.display,
-    })
-  end
-
-  return base.make_meta(ctx, {
-    confidence = "low",
-    current_rev = parent.rev,
-    current_rev_kind = parent.kind,
-    current_display = parent.display,
-    peer_rev = at.rev,
-    peer_rev_kind = at.kind,
-    peer_display = at.display,
-  })
+  return base.resolve_sides(ctx, at, parent)
 end
 
 return M

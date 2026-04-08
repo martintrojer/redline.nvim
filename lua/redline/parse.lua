@@ -2,12 +2,9 @@ local M = {}
 
 function M.find_file_for_cursor(lines, cursor_line)
   for i = cursor_line, 1, -1 do
-    local old_file, new_file = lines[i]:match("^diff %-%-git a/(.-) b/(.-)$")
-    if new_file and new_file ~= "" then
-      return new_file
-    end
-    if old_file and old_file ~= "" then
-      return old_file
+    local file = lines[i]:match("^diff %-%-git a/.- b/(.-)$")
+    if file and file ~= "" then
+      return file
     end
   end
   return nil

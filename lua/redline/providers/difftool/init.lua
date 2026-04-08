@@ -77,18 +77,8 @@ function M.open_review()
 end
 
 function M.comment_current()
-  local entry, err = require("redline.providers.difftool.extract").current()
-  if not entry then
-    vim.notify(err, vim.log.levels.WARN)
-    return
-  end
-
-  vim.ui.input({ prompt = "Review comment: " }, function(comment)
-    if not comment or comment:match("^%s*$") then
-      return
-    end
-    entry.comment = comment
-    require("redline").append(M.config, entry)
+  require("redline").comment(M.config, vim.api.nvim_get_current_buf(), function(_)
+    return require("redline.providers.difftool.extract").current()
   end)
 end
 
