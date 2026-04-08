@@ -116,26 +116,10 @@ from different providers), presents a picker. If none exist, shows a message.
 
 ### As a library
 
-Plugins can use redline as a review engine by creating their own config:
-
-```lua
-local redline = require("redline")
-local config = redline.make_config({
-  repo_type = "jj",
-  repo_root = function() return find_root() end,
-  buf_name = "my-review",
-  source = "my-plugin review",
-  on_show = function(bufnr)
-    -- set up custom keymaps on the review buffer
-  end,
-})
-
--- From a diff buffer keymap:
-redline.comment_unified_diff(config, bufnr, { file = "foo.lua", rev = "@" })
-
--- Open the review buffer:
-redline.show(config)
-```
+Plugins can use redline as a review engine — either as a built-in provider or
+as an optional dependency baked into your VCS plugin. See
+[INTEGRATING.md](INTEGRATING.md) for the full guide, entry field reference,
+and comparison of both approaches.
 
 ## API
 
