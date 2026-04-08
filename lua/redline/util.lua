@@ -1,25 +1,5 @@
 local M = {}
 
-function M.create_scratch_buffer(opts)
-  opts = opts or {}
-  local bufnr = vim.api.nvim_create_buf(false, true)
-
-  vim.bo[bufnr].buftype = opts.buftype or "nofile"
-  vim.bo[bufnr].bufhidden = opts.bufhidden or "wipe"
-  vim.bo[bufnr].swapfile = false
-  vim.bo[bufnr].modifiable = opts.modifiable == true
-
-  if opts.filetype then
-    vim.bo[bufnr].filetype = opts.filetype
-  end
-
-  if opts.name then
-    pcall(vim.api.nvim_buf_set_name, bufnr, opts.name)
-  end
-
-  return bufnr
-end
-
 function M.map(bufnr, mode, lhs, rhs, opts)
   local base = { buffer = bufnr, noremap = true, silent = true }
   if opts then
@@ -89,58 +69,6 @@ end
 
 function M.close_cmd(open_mode)
   return open_mode == "tab" and "tabclose" or "close"
-end
-
-function M.help_popup(title, lines, opts)
-  opts = opts or {}
-  local help_buf = M.create_scratch_buffer({ filetype = "markdown", modifiable = true })
-  vim.api.nvim_buf_set_lines(help_buf, 0, -1, false, lines or {})
-  vim.bo[help_buf].modifiable = false
-  vim.bo[help_buf].modified = false
-
-  local win_width = vim.o.columns
-  local win_height = vim.o.lines
-  local width = math.min(opts.width or 60, win_width - 4)
-  local height = math.min(#(lines or {}) + 2, win_height - 4)
-
-  local win_opts = {
-    relative = "editor",
-    width = width,
-    height = height,
-    row = (win_height - height) / 2,
-    col = (win_width - width) / 2,
-    style = "minimal",
-    border = "rounded",
-  }
-
-  if title then
-    win_opts.title = " " .. title .. " "
-    win_opts.title_pos = "center"
-  end
-
-  local help_win = vim.api.nvim_open_win(help_buf, true, win_opts)
-
-  local function close()
-    if vim.api.nvim_win_is_valid(help_win) then
-      vim.api.nvim_win_close(help_win, true)
-    end
-  end
-
-  vim.keymap.set("n", "<CR>", close, { buffer = help_buf, noremap = true, silent = true })
-  vim.keymap.set("n", "<Esc>", close, { buffer = help_buf, noremap = true, silent = true })
-  vim.keymap.set("n", "q", close, { buffer = help_buf, noremap = true, silent = true })
-
-  for _, key in ipairs(opts.close_keys or {}) do
-    vim.keymap.set("n", key, close, { buffer = help_buf, noremap = true, silent = true })
-  end
-
-  vim.api.nvim_create_autocmd("WinLeave", {
-    buffer = help_buf,
-    once = true,
-    callback = close,
-  })
-
-  return help_buf, help_win
 end
 
 function M.run(cmd, cwd)

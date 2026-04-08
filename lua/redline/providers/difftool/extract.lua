@@ -180,7 +180,6 @@ function M.current()
     side = current.side,
     peer_path = meta.peer.relpath or meta.peer.path,
     peer_rev = meta.peer.display or meta.peer.rev,
-    confidence = meta.confidence,
     selected_line = selected ~= "" and selected or "(blank line)",
     line_number = cursor[1],
     qf_text = current.qf_entry and current.qf_entry.text or nil,

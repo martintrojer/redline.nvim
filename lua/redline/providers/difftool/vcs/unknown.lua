@@ -10,9 +10,8 @@ function M.resolve_session(ctx)
 
   return base.make_meta(
     ctx,
-    { rev = "unknown", kind = "unknown", display = current_display },
-    { rev = "unknown", kind = "unknown", display = peer_display },
-    "low"
+    { rev = "unknown", display = current_display },
+    { rev = "unknown", display = peer_display }
   )
 end
 

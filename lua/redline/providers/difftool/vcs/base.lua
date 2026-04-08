@@ -31,20 +31,17 @@ function M.make_side(path, relpath, spec)
     path = path,
     relpath = relpath,
     rev = spec.rev,
-    rev_kind = spec.kind,
     display = spec.display or spec.rev,
   }
 end
 
-function M.make_meta(ctx, current_spec, peer_spec, confidence)
+function M.make_meta(ctx, current_spec, peer_spec)
   local primary_path, peer_path = side_paths(ctx, ctx.side)
   local primary_rel, peer_rel = side_rels(ctx, ctx.side)
 
   return {
     vcs = ctx.detection.vcs,
     repo_root = ctx.detection.repo_root,
-    packet_key = ctx.detection.packet_key,
-    confidence = confidence or "low",
     current = M.make_side(
       primary_path,
       primary_rel or detect.relative_path(primary_path, ctx.detection.repo_root),
@@ -58,20 +55,30 @@ function M.make_meta(ctx, current_spec, peer_spec, confidence)
   }
 end
 
+function M.worktree_spec(path)
+  local util = require("redline.util")
+  local hash = util.file_hash(path)
+  local short = util.shorten_hash(hash)
+  return {
+    rev = hash or "WORKTREE",
+    display = short and ("WORKTREE " .. short) or "WORKTREE",
+  }
+end
+
 function M.resolve_sides(ctx, working_spec, committed_spec)
   local current_in = detect.is_inside_root(ctx.current_path, ctx.detection.repo_root)
   local peer_in = detect.is_inside_root(ctx.peer_path, ctx.detection.repo_root)
 
   if current_in and not peer_in then
-    return M.make_meta(ctx, working_spec, committed_spec, "medium")
+    return M.make_meta(ctx, working_spec, committed_spec)
   end
   if peer_in and not current_in then
-    return M.make_meta(ctx, committed_spec, working_spec, "medium")
+    return M.make_meta(ctx, committed_spec, working_spec)
   end
   if ctx.side == "right" then
-    return M.make_meta(ctx, working_spec, committed_spec, "low")
+    return M.make_meta(ctx, working_spec, committed_spec)
   end
-  return M.make_meta(ctx, committed_spec, working_spec, "low")
+  return M.make_meta(ctx, committed_spec, working_spec)
 end
 
 return M

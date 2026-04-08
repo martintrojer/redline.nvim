@@ -6,7 +6,7 @@ local M = {
 }
 
 function M.diff_for_path(ctx)
-  local relpath = ctx.right_rel or ctx.left_rel
+  local relpath = base.repo_relpath(ctx)
   if not relpath or relpath == "" or relpath:sub(1, 1) == "/" then
     return nil
   end
@@ -25,26 +25,17 @@ local function rev_spec(repo_root, revset)
     "-n",
     "1",
   }, repo_root)
-  if not out then
-    return {
-      rev = revset,
-      kind = "unknown",
-      display = revset,
-    }
-  end
 
+  if not out then
+    return { rev = revset, display = revset }
+  end
   local change_id, commit_id = out:match("^(%S+)%s+(%S+)$")
-  if not change_id or not commit_id then
-    return {
-      rev = revset,
-      kind = "unknown",
-      display = revset,
-    }
+  if not change_id then
+    return { rev = revset, display = revset }
   end
 
   return {
     rev = commit_id,
-    kind = "commit",
     display = string.format("%s %s %s", revset, change_id, commit_id),
   }
 end

@@ -39,26 +39,17 @@ local function rev_spec(repo_root, revset)
     "--template",
     "{rev} {node|short}\n",
   }, repo_root)
-  if not out then
-    return {
-      rev = revset,
-      kind = "unknown",
-      display = revset,
-    }
-  end
 
+  if not out then
+    return { rev = revset, display = revset }
+  end
   local revnum, node = out:match("^(%S+)%s+(%S+)$")
-  if not revnum or not node then
-    return {
-      rev = revset,
-      kind = "unknown",
-      display = revset,
-    }
+  if not revnum then
+    return { rev = revset, display = revset }
   end
 
   return {
     rev = node,
-    kind = "commit",
     display = string.format("%s %s", revnum, node),
   }
 end
@@ -71,17 +62,7 @@ function M.resolve_session(ctx)
     dot.display = dot.display .. " file " .. file_hash
   end
 
-  local function worktree_spec(path)
-    local hash = util.file_hash(path)
-    local short = util.shorten_hash(hash)
-    return {
-      rev = hash or "WORKTREE",
-      kind = hash and "blob" or "working-copy",
-      display = short and ("WORKTREE " .. short) or "WORKTREE",
-    }
-  end
-
-  return base.resolve_sides(ctx, worktree_spec(ctx.current_path), dot)
+  return base.resolve_sides(ctx, base.worktree_spec(ctx.current_path), dot)
 end
 
 return M

@@ -11,7 +11,11 @@ local function preamble_end(bufnr)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   for i, line in ipairs(lines) do
     if line == "## Review Items" then
-      return i + 1 -- line after "## Review Items" (+ blank line)
+      -- Include the blank line after "## Review Items" if present
+      if lines[i + 1] == "" then
+        return i + 1
+      end
+      return i
     end
   end
   return nil

@@ -40,11 +40,6 @@ local function maybe_attach(bufnr)
 end
 
 local function schedule_attach(bufnr)
-  vim.schedule(function()
-    if vim.api.nvim_buf_is_valid(bufnr) then
-      maybe_attach(bufnr)
-    end
-  end)
   vim.defer_fn(function()
     if vim.api.nvim_buf_is_valid(bufnr) then
       maybe_attach(bufnr)

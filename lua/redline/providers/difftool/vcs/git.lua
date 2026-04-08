@@ -27,16 +27,6 @@ end
 function M.resolve_session(ctx)
   local head = util.run({ "git", "rev-parse", "HEAD" }, ctx.detection.repo_root)
 
-  local function worktree_spec(path)
-    local hash = util.file_hash(path)
-    local short = util.shorten_hash(hash)
-    return {
-      rev = hash or "WORKTREE",
-      kind = hash and "blob" or "working-copy",
-      display = short and ("WORKTREE " .. short) or "WORKTREE",
-    }
-  end
-
   local function committed_spec()
     local relpath = base.repo_relpath(ctx)
     local short = util.shorten_hash(head)
@@ -48,12 +38,11 @@ function M.resolve_session(ctx)
     end
     return {
       rev = head or "HEAD",
-      kind = "commit",
       display = display,
     }
   end
 
-  return base.resolve_sides(ctx, worktree_spec(ctx.current_path), committed_spec())
+  return base.resolve_sides(ctx, base.worktree_spec(ctx.current_path), committed_spec())
 end
 
 return M
