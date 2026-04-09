@@ -150,16 +150,18 @@ end
 - For non-diff buffers (log, blame), only map `gR` since there are no diff
   lines to capture.
 
-### Real example: minigit provider
+### Real examples
 
-See `lua/redline/providers/minigit.lua`. It hooks into two event sources:
+**minigit provider** (`lua/redline/providers/minigit.lua`) — hooks into two
+event sources: the `MiniGitCommandSplit` User event fired by `:Git` commands,
+and `FileType git` to catch `MiniGit.show_at_cursor()` buffers. Parses the
+revision from the git command array.
 
-1. `MiniGitCommandSplit` User event — fired by `:Git` commands
-2. `FileType git` — catches `MiniGit.show_at_cursor()` buffers that bypass
-   the User event
-
-It parses the revision from the git command array and builds a context table
-for each buffer.
+**fugitive provider** (`lua/redline/providers/fugitive.lua`) — hooks into the
+`FugitivePager` User event fired by vim-fugitive for `:Git diff`, `:Git show`,
+`:Git log`, etc. Uses `FugitiveResult(bufnr)` to retrieve the git subcommand,
+args, cwd, and git_dir. Shares `buf_name = "redline-git"` with minigit so both
+providers feed into the same review buffer.
 
 ## Approach 2: External integration (baked into your VCS plugin)
 
@@ -302,4 +304,4 @@ end
 | Context quality | Heuristic (autocmd data, buffer names) | Precise (your plugin owns the data) |
 | Dependency | Part of redline | Optional — graceful degradation |
 | Review buffer keymaps | Generic (`q` only) | Custom via `on_show` |
-| Best for | Generic tools (mini.git, DiffTool) | VCS-specific plugins with rich metadata |
+| Best for | Generic tools (mini.git, fugitive, DiffTool) | VCS-specific plugins with rich metadata |

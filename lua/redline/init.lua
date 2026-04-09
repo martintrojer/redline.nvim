@@ -32,6 +32,9 @@ function M.setup(opts)
   if M.defaults.providers.minigit then
     require("redline.providers.minigit").setup(M.defaults)
   end
+  if M.defaults.providers.fugitive then
+    require("redline.providers.fugitive").setup(M.defaults)
+  end
   if M.defaults.providers.difftool then
     require("redline.providers.difftool").setup(M.defaults)
   end

@@ -18,6 +18,7 @@ providers.
 - **Per-provider configs** — each provider gets its own buffer and context, no conflicts
 - **Built-in providers:**
   - **minigit** — integrates with [mini.git](https://github.com/echasnovski/mini.nvim) command splits (`:Git diff`, `:Git show`)
+  - **fugitive** — integrates with [vim-fugitive](https://github.com/tpope/vim-fugitive) pager buffers (`:Git diff`, `:Git show`, `:Git log`)
   - **difftool** — integrates with Neovim 0.12+ `:DiffTool` side-by-side diffs, with VCS-backed metadata for git, jj, and hg
 - **Plugin integration** — used as an optional dependency by [jj-fugitive](https://github.com/martintrojer/jj-fugitive) and [sl-fugitive](https://github.com/martintrojer/sl-fugitive)
 
@@ -34,7 +35,7 @@ providers.
   "martintrojer/redline.nvim",
   config = function()
     require("redline").setup({
-      providers = { difftool = true, minigit = true },
+      providers = { difftool = true, minigit = true, fugitive = true },
     })
   end,
 }
@@ -50,7 +51,7 @@ Then in your init:
 
 ```lua
 require("redline").setup({
-  providers = { difftool = true, minigit = true },
+  providers = { difftool = true, minigit = true, fugitive = true },
 })
 ```
 
@@ -70,7 +71,7 @@ don't conflict.
 ```lua
 -- redline setup enables built-in providers
 require("redline").setup({
-  providers = { difftool = true, minigit = true },
+  providers = { difftool = true, minigit = true, fugitive = true },
 })
 
 -- jj-fugitive creates its own "jj-review" buffer automatically
@@ -85,6 +86,7 @@ require("redline").setup({
   prompt_lines = nil,        -- nil = default AI prompt, false = none, table = custom
   providers = {
     minigit = true,          -- auto-attach to mini.git command splits
+    fugitive = true,         -- auto-attach to vim-fugitive pager buffers
     difftool = true,         -- auto-attach to :DiffTool windows
   },
 })
@@ -105,6 +107,11 @@ on relevant buffers:
 **minigit provider:** attaches to `MiniGitCommandSplit` events and
 `MiniGit.show_at_cursor()` buffers. Works with `:Git diff`, `:Git show`,
 `:Git log`, `:Git blame`, and cursor-based commit inspection.
+
+**fugitive provider:** attaches to `FugitivePager` events from
+[vim-fugitive](https://github.com/tpope/vim-fugitive). Works with `:Git diff`,
+`:Git show`, `:Git log`, and `:Git blame`. Shares the same review buffer as
+the minigit provider (both are git-backed).
 
 **difftool provider:** attaches to `:DiffTool` side-by-side diff windows.
 Detects git, jj, and hg repos automatically and resolves revision metadata.

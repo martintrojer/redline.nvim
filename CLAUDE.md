@@ -16,5 +16,6 @@ Neovim plugin for capturing AI review comments from diff views. Provides a share
 
 - `lua/redline/` — core modules (init, parse, format, buffer, util)
 - `lua/redline/providers/minigit.lua` — mini.git integration
+- `lua/redline/providers/fugitive.lua` — vim-fugitive integration
 - `lua/redline/providers/difftool/` — `:DiffTool` integration (session, detect, extract, vcs/)
 - `plugin/redline.lua` — `:Redline` command registration
